@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>苹果品质检测 · 一张照片判断好苹果</title>
+<style>
+  :root{
+    --bg:#0a0b0d;
+    --panel:#131519;
+    --panel-2:#181b21;
+    --line:rgba(255,255,255,.07);
+    --line-strong:rgba(255,255,255,.13);
+    --text:#eef0f3;
+    --muted:#98a1ad;
+    --dim:#6b7480;
+    --red:#ff4d4d;
+    --red-soft:rgba(255,77,77,.12);
+    --green:#3ecf8e;
+    --gold:#ffc857;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1100px 600px at 12% -10%, rgba(255,77,77,.10), transparent 62%),
+      radial-gradient(900px 520px at 100% 0%, rgba(86,180,255,.055), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    padding:28px 20px 48px;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+
+  /* ---------- header ---------- */
+  .top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{
+    width:52px;height:52px;border-radius:16px;flex:0 0 auto;
+    background:linear-gradient(150deg,#ff5f52,#c2170f 65%,#7d0b07);
+    display:grid;place-items:center;font-size:26px;
+    box-shadow:0 8px 26px -10px rgba(255,77,77,.85), inset 0 1px 0 rgba(255,255,255,.28);
+  }
+  h1{margin:0;font-size:21px;letter-spacing:.2px;font-weight:650}
+  .brand p{margin:3px 0 0;font-size:13px;color:var(--muted)}
+  .pill{
+    font-size:12px;color:var(--muted);border:1px solid var(--line-strong);
+    background:rgba(255,255,255,.03);padding:7px 13px;border-radius:999px;white-space:nowrap
+  }
+
+  /* ---------- layout ---------- */
+  .grid{display:grid;grid-template-columns:392px minmax(0,1fr);gap:18px;align-items:start}
+  @media (max-width:940px){ .grid{grid-template-columns:1fr} }
+
+  .card{
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--line);border-radius:20px;padding:20px;
+    box-shadow:0 24px 50px -34px rgba(0,0,0,.9);
+  }
+  .card-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
+  .card-head h2{margin:0;font-size:13px;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim);font-weight:600}
+  .card-head .sub{font-size:12px;color:var(--dim)}
+
+  /* ---------- drop zone ---------- */
+  .drop{
+    position:relative;border:1.5px dashed rgba(255,255,255,.16);border-radius:16px;
+    padding:30px 18px 24px;text-align:center;cursor:pointer;
+    background:radial-gradient(120% 100% at 50% 0%,rgba(255,255,255,.045),rgba(255,255,255,0));
+    transition:border-color .18s,background .18s,transform .18s;
+  }
+  .drop:hover{border-color:rgba(255,77,77,.5);background:radial-gradient(120% 100% at 50% 0%,rgba(255,77,77,.09),rgba(255,255,255,0))}
+  .drop.over{border-color:var(--red);transform:scale(.995);background:radial-gradient(120% 100% at 50% 0%,rgba(255,77,77,.16),rgba(255,255,255,0))}
+  .drop svg{width:62px;height:62px;margin-bottom:8px;opacity:.92}
+  .drop-title{margin:0;font-size:14.5px;font-weight:600}
+  .drop-sub{margin:7px 0 16px;font-size:12px;color:var(--dim);line-height:1.6}
+  .drop-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+
+  .btn{
+    appearance:none;border:1px solid var(--line-strong);background:rgba(255,255,255,.05);
+    color:var(--text);font:inherit;font-size:13px;font-weight:550;padding:9px 16px;border-radius:11px;
+    cursor:pointer;transition:.16s;display:inline-flex;align-items:center;gap:6px
+  }
+  .btn:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22)}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:linear-gradient(180deg,#ff6157,#e0271f);border-color:rgba(255,120,110,.6);box-shadow:0 8px 22px -12px rgba(255,60,50,.9)}
+  .btn.primary:hover{filter:brightness(1.07)}
+  .btn.tiny{padding:6px 11px;font-size:12px;border-radius:9px;color:var(--muted)}
+  .btn.tiny:hover{color:var(--text)}
+
+  .row{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .row-label{font-size:12px;color:var(--dim);letter-spacing:.3px}
+
+  .slider-row{
+    margin-top:18px;padding-top:16px;border-top:1px solid var(--line);
+    display:flex;align-items:center;gap:14px;justify-content:space-between
+  }
+  .hint{font-size:11.5px;color:var(--dim);margin-top:5px;line-height:1.5}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:132px;height:4px;border-radius:99px;
+    background:linear-gradient(90deg,#3a3f47,#5b626c);outline:none;flex:0 0 auto
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:#fff;border:3px solid var(--red);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.6)
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--red);cursor:pointer
+  }
+
+  /* ---------- result ---------- */
+  .result{min-height:520px;display:flex;flex-direction:column}
+  .empty{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;padding:40px 20px;text-align:center;color:var(--dim)
+  }
+  .empty .ring{
+    width:96px;height:96px;border-radius:50%;border:1px dashed rgba(255,255,255,.14);
+    display:grid;place-items:center;font-size:38px;opacity:.5
+  }
+  .empty h3{margin:0;font-size:14.5px;color:var(--muted);font-weight:600}
+  .empty p{margin:0;font-size:12.5px;max-width:300px;line-height:1.7}
+
+  .stage{display:none;flex:1;flex-direction:column;gap:18px}
+  .stage.on{display:flex}
+
+  .busy{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px}
+  .busy.on{display:flex}
+  .spinner{width:34px;height:34px;border-radius:50%;border:2.5px solid rgba(255,255,255,.12);border-top-color:var(--red);animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .busy-text{font-size:13px;color:var(--muted);letter-spacing:.4px}
+
+  .preview-wrap{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#0c0d10}
+  #preview{display:block;width:100%;height:auto;max-height:400px;object-fit:contain;background:#0c0d10}
+  .badge{
+    position:absolute;top:12px;left:12px;padding:6px 12px;border-radius:99px;font-size:12px;font-weight:650;
+    backdrop-filter:blur(8px);background:rgba(10,11,13,.68);border:1px solid rgba(255,255,255,.16)
+  }
+  .toggle{
+    position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:6px;
+    font-size:11.5px;color:#d5dae1;background:rgba(10,11,13,.7);border:1px solid rgba(255,255,255,.14);
+    padding:5px 10px;border-radius:99px;cursor:pointer;backdrop-filter:blur(8px)
+  }
+  .toggle input{accent-color:var(--red);margin:0}
+
+  .score-row{display:flex;align-items:center;gap:20px}
+  .gauge{width:118px;height:118px;flex:0 0 auto}
+  .gauge-bg{fill:none;stroke:rgba(255,255,255,.08);stroke-width:9}
+  .gauge-fg{fill:none;stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1),stroke .4s;transform:rotate(-90deg);transform-origin:50% 50%}
+  .verdict h3{margin:0 0 6px;font-size:19px;font-weight:680;letter-spacing:.2px}
+  .verdict p{margin:0;font-size:13px;color:var(--muted);line-height:1.65}
+
+  .dims{display:grid;gap:12px}
+  .dim{display:grid;grid-template-columns:72px 1fr 38px;align-items:center;gap:12px}
+  .dim .name{font-size:12.5px;color:var(--muted)}
+  .bar{height:6px;border-radius:99px;background:rgba(255,255,255,.075);overflow:hidden}
+  .bar i{display:block;height:100%;width:0;border-radius:99px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+  .dim .val{font-size:12.5px;color:var(--text);text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+
+  .reasons{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+  .reasons li{display:flex;gap:9px;font-size:12.8px;line-height:1.6;color:#ccd2da}
+  .reasons li .dot{flex:0 0 auto;width:16px;height:16px;border-radius:50%;display:grid;place-items:center;font-size:10px;margin-top:2px}
+  .reasons li.good .dot{background:rgba(62,207,142,.16);color:var(--green)}
+  .reasons li.bad .dot{background:rgba(255,107,91,.16);color:#ff6b5b}
+  .reasons li.warn .dot{background:rgba(255,200,87,.16);color:var(--gold)}
+
+  .fineprint{margin:0;font-size:11.5px;color:var(--dim);line-height:1.7;border-top:1px solid var(--line);padding-top:14px}
+
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+    background:#22262d;border:1px solid var(--line-strong);color:var(--text);font-size:12.5px;
+    padding:10px 18px;border-radius:12px;transition:.25s;z-index:50;box-shadow:0 18px 40px -18px #000
+  }
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+
+  footer{margin-top:22px;text-align:center;font-size:11.5px;color:var(--dim);line-height:1.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">🍎</div>
+      <div>
+        <h1>苹果品质检测</h1>
+        <p>给一张照片，判断它是不是一个好苹果</p>
+      </div>
+    </div>
+    <div class="pill">🔒 纯本地分析 · 照片不会上传</div>
+  </header>
+
+  <div class="grid">
+    <!-- 输入 -->
+    <section class="card">
+      <div class="card-head"><h2>01 · 提供照片</h2></div>
+
+      <div class="drop" id="drop">
+        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <defs>
+            <radialGradient id="ap" cx="35%" cy="30%" r="75%">
+              <stop offset="0%" stop-color="#ff7a6b"/>
+              <stop offset="55%" stop-color="#e3302a"/>
+              <stop offset="100%" stop-color="#8d120d"/>
+            </radialGradient>
+          </defs>
+          <path d="M32 20c1-6 5-10 11-11-1 6-5 10-11 11z" fill="#4a8b41"/>
+          <path d="M31 18c0-4 0-6 1-9" stroke="#6b4a2a" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M32 20c8-5 18 1 18 12 0 10-7 22-18 22S14 42 14 32c0-11 10-17 18-12z" fill="url(#ap)"/>
+          <ellipse cx="25" cy="28" rx="5" ry="7" fill="#fff" opacity=".22" transform="rotate(-20 25 28)"/>
+        </svg>
+        <p class="drop-title">拖拽照片到这里，或点击选择</p>
+        <p class="drop-sub">支持 JPG / PNG / WebP · 单果入镜、背景简洁、光线均匀效果最好</p>
+        <div class="drop-actions">
+          <button class="btn primary" id="pickBtn" type="button">选择照片</button>
+          <button class="btn" id="camBtn" type="button">📷 拍照</button>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" hidden>
+        <input type="file" id="camInput" accept="image/*" capture="environment" hidden>
+      </div>
+
+      <div class="row">
+        <span class="row-label">没照片？看示例</span>
+        <button class="btn tiny" data-demo="good" type="button">好苹果</button>
+        <button class="btn tiny" data-demo="bad" type="button">有瑕疵</button>
+      </div>
+
+      <div class="slider-row">
+        <div>
+          <div class="row-label">检测灵敏度</div>
+          <div class="hint" id="sensHint">标准 · 能发现明显的碰伤与褐变</div>
+        </div>
+        <input type="range" id="sens" min="1" max="5" step="1" value="3" aria-label="检测灵敏度">
+      </div>
+    </section>
+
+    <!-- 结果 -->
+    <section class="card result" id="resultCard">
+      <div class="empty" id="emptyState">
+        <div class="ring">🍎</div>
+        <h3>还没有照片</h3>
+        <p>上传一张苹果照片，我会从颜色、光泽、碰伤褐变三个方面给出判断。</p>
+      </div>
+
+      <div class="busy" id="busy">
+        <div class="spinner"></div>
+        <div class="busy-text" id="busyText">正在读取图像…</div>
+      </div>
+
+      <div class="stage" id="stage">
+        <div class="preview-wrap">
+          <canvas id="preview" width="420" height="420"></canvas>
+          <div class="badge" id="previewBadge">—</div>
+          <label class="toggle"><input type="checkbox" id="marks" checked> 标注瑕疵</label>
+        </div>
+
+        <div class="score-row">
+          <svg class="gauge" viewBox="0 0 120 120">
+            <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+            <circle class="gauge-fg" id="gaugeFg" cx="60" cy="60" r="50" stroke-dasharray="314.16" stroke-dashoffset="314.16" stroke="#3ecf8e"/>
+            <text id="gaugeNum" x="60" y="60" text-anchor="middle" dominant-baseline="central"
+                  font-size="30" font-weight="700" fill="#eef0f3" font-family="inherit">0</text>
+            <text x="60" y="80" text-anchor="middle" font-size="9.5" fill="#98a1ad" letter-spacing="1.5">SCORE</text>
+          </svg>
+          <div class="verdict">
+            <h3 id="verdictTitle">—</h3>
+            <p id="verdictText"></p>
+          </div>
+        </div>
+
+        <div class="dims" id="dims"></div>
+        <ul class="reasons" id="reasons"></ul>
+
+        <p class="fineprint" id="fineprint"></p>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    图像特征启发式分析 · 不构成食品安全结论。内部霉心、农残、口感等无法从外观判断。<br>
+    <a href="检测原理详解.html" style="color:#8b95a2;text-decoration:none;border-bottom:1px dashed rgba(255,255,255,.28);padding-bottom:1px">它到底是怎么判断的 → 逐环节原理详解</a>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= 工具 ================= */
+  var $ = function(s){ return document.querySelector(s); };
+  var clamp01 = function(v){ return v < 0 ? 0 : (v > 1 ? 1 : v); };
+  var wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
+
+  var els = {
+    drop: $('#drop'),
+    fileInput: $('#fileInput'),
+    camInput: $('#camInput'),
+    pickBtn: $('#pickBtn'),
+    camBtn: $('#camBtn'),
+    sens: $('#sens'),
+    sensHint: $('#sensHint'),
+    empty: $('#emptyState'),
+    busy: $('#busy'),
+    busyText: $('#busyText'),
+    stage: $('#stage'),
+    preview: $('#preview'),
+    previewBadge: $('#previewBadge'),
+    marks: $('#marks'),
+    gaugeFg: $('#gaugeFg'),
+    gaugeNum: $('#gaugeNum'),
+    verdictTitle: $('#verdictTitle'),
+    verdictText: $('#verdictText'),
+    dims: $('#dims'),
+    reasons: $('#reasons'),
+    fineprint: $('#fineprint'),
+    toast: $('#toast')
+  };
+
+  var toastTimer = null;
+  function toast(msg){
+    els.toast.textContent = msg;
+    els.toast.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ els.toast.classList.remove('on'); }, 2600);
+  }
+
+  /* ================= 灵敏度 ================= */
+  var SENS_TEXT = {
+    1: '宽松 · 只报很明显的腐烂与黑斑',
+    2: '偏宽松 · 只抓大的瑕疵',
+    3: '标准 · 能发现明显的碰伤与褐变',
+    4: '严格 · 轻微色差也会计入',
+    5: '极严 · 连小的暗点都不放过'
+  };
+  els.sens.addEventListener('input', function(){
+    els.sensHint.textContent = SENS_TEXT[els.sens.value];
+    if (lastSource) analyze(lastSource);
+  });
+
+  /* ================= 图像载入 ================= */
+  var lastSource = null;   // ImageBitmap / HTMLCanvasElement
+  var lastResult = null;
+
+  async function fileToSource(file){
+    if (window.createImageBitmap){
+      try{
+        return await createImageBitmap(file, { imageOrientation: 'from-image' });
+      }catch(e){
+        try{ return await createImageBitmap(file); }catch(e2){ /* fallthrough */ }
+      }
+    }
+    return await new Promise(function(res, rej){
+      var url = URL.createObjectURL(file);
+      var im = new Image();
+      im.onload = function(){ URL.revokeObjectURL(url); res(im); };
+      im.onerror = function(){ URL.revokeObjectURL(url); rej(new Error('decode')); };
+      im.src = url;
+    });
+  }
+
+  async function handleFile(file){
+    if (!file){ return; }
+    if (!/^image\//.test(file.type || '')){
+      toast('这不是图片文件，换一张试试');
+      return;
+    }
+    try{
+      var src = await fileToSource(file);
+      lastSource = src;
+      await analyze(src);
+    }catch(err){
+      console.error(err);
+      toast('这张图读不出来，换一张试试');
+    }
+  }
+
+  /* ================= 分析主体 ================= */
+  var MAXDIM = 420;
+
+  function analyze(src){
+    return new Promise(async function(resolve){
+      showBusy('正在读取图像…');
+      await wait(140);
+
+      var sw = src.width || src.naturalWidth;
+      var sh = src.height || src.naturalHeight;
+      if (!sw || !sh){ toast('图片尺寸异常'); resolve(); return; }
+
+      var scale = Math.min(1, MAXDIM / Math.max(sw, sh));
+      var W = Math.max(8, Math.round(sw * scale));
+      var H = Math.max(8, Math.round(sh * scale));
+
+      var cnv = document.createElement('canvas');
+      cnv.width = W; cnv.height = H;
+      var ctx = cnv.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(src, 0, 0, W, H);
+
+      var imgData;
+      try{
+        imgData = ctx.getImageData(0, 0, W, H);
+      }catch(e){
+        toast('浏览器拒绝了图像读取');
+        resolve(); return;
+      }
+
+      showBusy('提取颜色与光泽特征…');
+      await wait(180);
+
+      var res;
+      try{
+        res = computeFeatures(imgData.data, W, H, cnv, +els.sens.value);
+      }catch(e){
+        console.error(e);
+        toast('分析失败，换一张图试试');
+        resolve(); return;
+      }
+
+      showBusy('排查碰伤与褐变…');
+      await wait(180);
+
+      lastResult = res;
+      render(res);
+      resolve();
+    });
+  }
+
+  /* ---------- 核心算法 ---------- */
+  function computeFeatures(d, W, H, canvas, sens){
+    var N = W * H;
+    var hue = new Float32Array(N);
+    var sat = new Float32Array(N);
+    var val = new Float32Array(N);
+    var lum = new Float32Array(N);
+    var isFruit = new Uint8Array(N);
+    var i, r, g, b, mx, mn, df, hu, s, v;
+
+    /* RGB -> HSV，同时打出“像苹果”的初筛 */
+    for (i = 0; i < N; i++){
+      r = d[i*4] / 255; g = d[i*4+1] / 255; b = d[i*4+2] / 255;
+      mx = r > g ? (r > b ? r : b) : (g > b ? g : b);
+      mn = r < g ? (r < b ? r : b) : (g < b ? g : b);
+      df = mx - mn;
+      hu = 0;
+      if (df > 1e-6){
+        if (mx === r)      hu = ((g - b) / df) % 6;
+        else if (mx === g) hu = (b - r) / df + 2;
+        else               hu = (r - g) / df + 4;
+        hu *= 60;
+        if (hu < 0) hu += 360;
+      }
+      s = mx > 0 ? df / mx : 0;
+      hue[i] = hu; sat[i] = s; val[i] = mx;
+      lum[i] = 0.299 * r + 0.587 * g + 0.114 * b;
+
+      /* 苹果色系：红(0±) 到 黄绿(<=155)，排除青蓝紫 */
+      isFruit[i] = (mx > 0.09 && s > 0.16 && (hu <= 155 || hu >= 318)) ? 1 : 0;
+    }
+
+    /* 取最大的连通块作为果实主体 */
+    var mainMask = largestComponent(isFruit, W, H);
+    var covered = 0;
+    for (i = 0; i < N; i++) if (mainMask[i]) covered++;
+
+    if (covered < N * 0.015){
+      return {
+        ok: false, W: W, H: H, canvas: canvas,
+        reason: '没有识别到明显的果实区域',
+        tips: '请让苹果占画面主体，背景尽量简洁、避免同色系大面积干扰。'
+      };
+    }
+
+    /* 补洞（高光、水渍会破坏连通性） */
+    var filled = fillHoles(mainMask, W, H);
+    /* 收缩边缘：轮廓过渡带（虚焦、抗锯齿）会被误判成暗斑 */
+    var er = Math.max(4, Math.round(Math.sqrt(covered / Math.PI) * 0.05));
+    var inner = erode(filled, W, H, er);
+
+    /* 扫描用的坐标变量 */
+    var y, x;
+
+    /* 统计 */
+    var area = 0, sumSat = 0, sumVal = 0, hiCount = 0;
+    var cx = 0, cy = 0;
+    var hsx = 0, hsy = 0, hw = 0;
+    for (y = 0; y < H; y++){
+      for (x = 0; x < W; x++){
+        i = y * W + x;
+        if (!inner[i]) continue;
+        area++;
+        sumSat += sat[i]; sumVal += val[i];
+        cx += x; cy += y;
+        if (val[i] > 0.88 && sat[i] < 0.30) hiCount++;
+        if (sat[i] > 0.28 && val[i] > 0.20){
+          var a2 = hue[i] * Math.PI / 180;
+          var w2 = sat[i] * (0.4 + val[i]);
+          hsx += Math.cos(a2) * w2; hsy += Math.sin(a2) * w2; hw += w2;
+        }
+      }
+    }
+    if (area < 40){
+      return {
+        ok: false, W: W, H: H, canvas: canvas,
+        reason: '果实区域太小，无法评估',
+        tips: '把苹果拍得更大一些、靠近一点，效果更准。'
+      };
+    }
+    cx /= area; cy /= area;
+
+    var meanSat = sumSat / area;
+    var meanVal = sumVal / area;
+    var highlightFrac = hiCount / area;
+
+    /* 色相一致性（圆统计，天然处理红→0 回绕） */
+    var R = hw > 0 ? Math.min(1, Math.hypot(hsx, hsy) / hw) : 0;
+    var hueStd = Math.sqrt(-2 * Math.log(Math.max(R, 1e-6))) * 180 / Math.PI;
+
+    /* 形状：二阶矩 */
+    var mxx = 0, myy = 0, mxy = 0, minX = W, maxX = 0, minY = H, maxY = 0;
+    for (y = 0; y < H; y++){
+      for (x = 0; x < W; x++){
+        i = y * W + x;
+        if (!inner[i]) continue;
+        var dx = x - cx, dy = y - cy;
+        mxx += dx * dx; myy += dy * dy; mxy += dx * dy;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+    mxx /= area; myy /= area; mxy /= area;
+    var tr = mxx + myy;
+    var det = mxx * myy - mxy * mxy;
+    var disc = Math.sqrt(Math.max(0, tr * tr / 4 - det));
+    var l1 = tr / 2 + disc, l2 = tr / 2 - disc;
+    var roundness = l1 > 1e-6 ? Math.sqrt(Math.max(l2, 1e-6) / l1) : 0.5;
+    var bw = maxX - minX + 1, bh = maxY - minY + 1;
+    var bboxFill = area / (bw * bh);
+    var fillScore = clamp01(1 - Math.abs(bboxFill - 0.785) / 0.32);
+
+    /* 瑕疵检测：色相偏离主色（褐变）+ 明显暗斑 + 发灰斑（霉变/失水）
+       以果实“亮面亮度”（75 分位）为基准，避免大面积淤伤被局部均值稀释 */
+    var dominantHue = Math.atan2(hsy, hsx) * 180 / Math.PI;
+    if (dominantHue < 0) dominantHue += 360;
+
+    var hist = new Float64Array(64);
+    for (i = 0; i < N; i++){
+      if (inner[i]) hist[Math.min(63, Math.floor(lum[i] * 64))]++;
+    }
+    var accH = 0, p75 = 0.6;
+    for (var hb = 0; hb < 64; hb++){
+      accH += hist[hb];
+      if (accH >= area * 0.75){ p75 = (hb + 0.5) / 64; break; }
+    }
+
+    var hueTol = 9 - (sens - 1) * 0.8;              // 与主色相差多少度开始算偏色
+    var darkGate = 0.075 - (sens - 1) * 0.009;      // 比亮面暗多少开始算异常
+    var desatGate = 0.14 - (sens - 1) * 0.015;      // 饱和度掉多少开始算褪色
+    var minCluster = Math.max(6, area * (0.0013 - (sens - 1) * 0.00017));
+    var defect = new Uint8Array(N);
+    for (y = 0; y < H; y++){
+      for (x = 0; x < W; x++){
+        i = y * W + x;
+        if (!inner[i]) continue;
+
+        var val0 = val[i];
+        if (val0 > 0.86) continue;                  // 高光不可能是瑕疵
+
+        var darkRel = p75 - lum[i];
+        if (darkRel <= darkGate) continue;          // 比亮面还亮 / 差不多亮 → 跳过
+
+        var dh = Math.abs(((hue[i] - dominantHue + 540) % 360) - 180);
+        var desat = meanSat - sat[i];
+
+        /* 阴影只是“同色变暗”，饱和度基本不变；淤伤会同时变暗 + 偏褐 + 褪色 */
+        var browner = dh > hueTol;
+        var duller = desat > desatGate;
+        var blackRot = val0 < 0.20 && darkRel > darkGate * 2;
+
+        if (browner || duller || blackRot) defect[i] = 1;
+      }
+    }
+
+    var clusters = clusterDefects(defect, inner, W, H, minCluster).filter(function(c){
+      /* 果柄、萼洼本身就是凹陷阴影，容易误判，排除上下端中部的小块 */
+      var nx = (c.cx - cx) / Math.max(1, bw);
+      var ny = (c.cy - cy) / Math.max(1, bh);
+      return !(Math.abs(nx) < 0.18 && (ny < -0.34 || ny > 0.34));
+    });
+    var defectArea = 0;
+    for (i = 0; i < clusters.length; i++) defectArea += clusters[i].area;
+    var defectRatio = defectArea / area;
+
+    /* 打分 */
+    var vivid = clamp01((meanSat - 0.14) / 0.58);
+    var bright = Math.exp(-Math.pow((meanVal - 0.56) / 0.30, 2));
+    var uniform = clamp01(1 - hueStd / 42);
+    var colorScore = 100 * (0.44 * vivid + 0.24 * bright + 0.32 * uniform);
+
+    var intactScore = 100 * Math.exp(-defectRatio * 24);
+    intactScore = Math.max(0, intactScore - Math.min(35, clusters.length * 4.5));
+    intactScore = Math.min(100, intactScore);
+
+    var gl;
+    if (highlightFrac < 0.0015)      gl = 50;
+    else if (highlightFrac <= 0.055) gl = 72 + (highlightFrac - 0.0015) / 0.0535 * 28;
+    else if (highlightFrac <= 0.15)  gl = 100 - (highlightFrac - 0.055) / 0.095 * 26;
+    else                             gl = 42;
+    var glossScore = Math.max(0, Math.min(100, gl));
+
+    var shapeScore = 100 * (0.6 * clamp01(roundness * 1.35) + 0.4 * fillScore);
+
+    var total =
+      intactScore * 0.46 +
+      colorScore  * 0.27 +
+      glossScore  * 0.13 +
+      shapeScore  * 0.14;
+
+    if (defectRatio > 0.10) total -= 6;
+    total = Math.max(3, Math.min(99, Math.round(total)));
+
+    return {
+      ok: true,
+      W: W, H: H, canvas: canvas,
+      score: total,
+      dims: {
+        intact: Math.round(intactScore),
+        color: Math.round(colorScore),
+        gloss: Math.round(glossScore),
+        shape: Math.round(shapeScore)
+      },
+      defects: clusters.map(function(c){ return { x: c.cx, y: c.cy, r: Math.sqrt(c.area / Math.PI) * 1.7 + 4, area: c.area }; }),
+      defectRatio: defectRatio,
+      spotCount: clusters.length,
+      stats: {
+        area: area, coverage: covered / N,
+        meanSat: meanSat, meanVal: meanVal,
+        hueStd: hueStd, highlightFrac: highlightFrac,
+        roundness: roundness, bbox: [minX, minY, bw, bh]
+      }
+    };
+  }
+
+  /* 最大连通块 */
+  function largestComponent(mask, W, H){
+    var N = W * H;
+    var label = new Int32Array(N);
+    var stack = new Int32Array(N);
+    var best = 0, bestSize = 0, cur = 0;
+
+    for (var i = 0; i < N; i++){
+      if (!mask[i] || label[i]) continue;
+      cur++;
+      var sp = 0, size = 0;
+      stack[sp++] = i; label[i] = cur;
+      while (sp > 0){
+        var p = stack[--sp]; size++;
+        var x = p % W, y = (p - x) / W;
+        if (x > 0     && mask[p-1] && !label[p-1]){ label[p-1] = cur; stack[sp++] = p-1; }
+        if (x < W - 1 && mask[p+1] && !label[p+1]){ label[p+1] = cur; stack[sp++] = p+1; }
+        if (p >= W    && mask[p-W] && !label[p-W]){ label[p-W] = cur; stack[sp++] = p-W; }
+        if (p < N - W && mask[p+W] && !label[p+W]){ label[p+W] = cur; stack[sp++] = p+W; }
+      }
+      if (size > bestSize){ bestSize = size; best = cur; }
+    }
+
+    var out = new Uint8Array(N);
+    for (i = 0; i < N; i++) if (label[i] === best) out[i] = 1;
+    return out;
+  }
+
+  /* 补洞 */
+  function fillHoles(mask, W, H){
+    var N = W * H;
+    var outside = new Uint8Array(N);
+    var stack = new Int32Array(N);
+    var sp = 0;
+    function push(i){
+      if (!mask[i] && !outside[i]){ outside[i] = 1; stack[sp++] = i; }
+    }
+    for (var x = 0; x < W; x++){ push(x); push((H - 1) * W + x); }
+    for (var y = 0; y < H; y++){ push(y * W); push(y * W + W - 1); }
+    while (sp > 0){
+      var p = stack[--sp];
+      var px = p % W;
+      if (px > 0) push(p - 1);
+      if (px < W - 1) push(p + 1);
+      if (p >= W) push(p - W);
+      if (p < N - W) push(p + W);
+    }
+    var out = new Uint8Array(N);
+    for (var i = 0; i < N; i++) out[i] = (mask[i] || !outside[i]) ? 1 : 0;
+    return out;
+  }
+
+  /* 腐蚀（可分离：先横后纵，等价于方形核） */
+  function erode(mask, W, H, r){
+    if (r <= 0) return mask;
+    var N = W * H;
+    var tmp = new Uint8Array(N), out = new Uint8Array(N);
+    var x, y, k, ok, xx, yy;
+    for (y = 0; y < H; y++){
+      for (x = 0; x < W; x++){
+        if (!mask[y * W + x]) continue;
+        ok = 1;
+        for (k = -r; k <= r; k++){
+          xx = x + k;
+          if (xx < 0 || xx >= W || !mask[y * W + xx]){ ok = 0; break; }
+        }
+        tmp[y * W + x] = ok;
+      }
+    }
+    for (y = 0; y < H; y++){
+      for (x = 0; x < W; x++){
+        if (!tmp[y * W + x]) continue;
+        ok = 1;
+        for (k = -r; k <= r; k++){
+          yy = y + k;
+          if (yy < 0 || yy >= H || !tmp[yy * W + x]){ ok = 0; break; }
+        }
+        out[y * W + x] = ok;
+      }
+    }
+    return out;
+  }
+
+  /* 瑕疵聚类 */
+  function clusterDefects(defect, inner, W, H, minArea){
+    var N = W * H;
+    var seen = new Uint8Array(N);
+    var stack = new Int32Array(N);
+    var list = [];
+    var i, p, q, x, y, sp, cnt, sx, sy, rim;
+    for (i = 0; i < N; i++){
+      if (!defect[i] || seen[i]) continue;
+      sp = 0; cnt = 0; sx = 0; sy = 0; rim = 0;
+      stack[sp++] = i; seen[i] = 1;
+      while (sp > 0){
+        p = stack[--sp]; cnt++;
+        x = p % W; y = (p - x) / W;
+        sx += x; sy += y;
+        if (x === 0 || y === 0 || x === W - 1 || y === H - 1) rim++;
+        if (x > 0){ q = p - 1; if (defect[q] && !seen[q]){ seen[q] = 1; stack[sp++] = q; } }
+        if (x < W - 1){ q = p + 1; if (defect[q] && !seen[q]){ seen[q] = 1; stack[sp++] = q; } }
+        if (p >= W){ q = p - W; if (defect[q] && !seen[q]){ seen[q] = 1; stack[sp++] = q; } }
+        if (p < N - W){ q = p + W; if (defect[q] && !seen[q]){ seen[q] = 1; stack[sp++] = q; } }
+      }
+      if (cnt >= minArea && rim === 0){
+        list.push({ area: cnt, cx: sx / cnt, cy: sy / cnt });
+      }
+    }
+    list.sort(function(a, b){ return b.area - a.area; });
+    return list.slice(0, 12);
+  }
+
+  /* ================= 渲染 ================= */
+  var GRADES = [
+    { min: 85, tag: '特级', color: '#3ecf8e', title: '这是个好苹果', desc: '外观完整、色泽自然，可以放心吃。' },
+    { min: 72, tag: '良好', color: '#8fdc6e', title: '算是个好苹果', desc: '整体状态不错，日常吃完全没问题。' },
+    { min: 58, tag: '一般', color: '#ffc857', title: '一般般', desc: '能吃，但算不上好苹果，建议尽快吃掉。' },
+    { min: 0,  tag: '较差', color: '#ff6b5b', title: '不太行', desc: '外观状态不佳，建议换一个。' }
+  ];
+
+  function gradeOf(score){
+    for (var i = 0; i < GRADES.length; i++) if (score >= GRADES[i].min) return GRADES[i];
+    return GRADES[GRADES.length - 1];
+  }
+
+  function showBusy(text){
+    els.empty.style.display = 'none';
+    els.stage.classList.remove('on');
+    els.busy.classList.add('on');
+    els.busyText.textContent = text;
+  }
+
+  function render(res){
+    els.busy.classList.remove('on');
+
+    if (!res.ok){
+      els.stage.classList.remove('on');
+      els.empty.style.display = 'flex';
+      els.empty.innerHTML =
+        '<div class="ring">🤔</div>' +
+        '<h3>' + escapeHtml(res.reason) + '</h3>' +
+        '<p>' + escapeHtml(res.tips) + '</p>';
+      return;
+    }
+
+    els.empty.style.display = 'none';
+    els.stage.classList.add('on');
+
+    /* 预览图 + 标注 */
+    els.preview.width = res.W;
+    els.preview.height = res.H;
+    drawPreview(res);
+
+    var g = gradeOf(res.score);
+    els.previewBadge.textContent = g.tag + ' · ' + res.score + ' 分';
+    els.previewBadge.style.color = g.color;
+    els.previewBadge.style.borderColor = hexA(g.color, .45);
+
+    /* 仪表 */
+    var C = 2 * Math.PI * 50;
+    els.gaugeFg.setAttribute('stroke-dasharray', C.toFixed(2));
+    els.gaugeFg.setAttribute('stroke', g.color);
+    els.gaugeFg.style.strokeDashoffset = C.toFixed(2);
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        els.gaugeFg.style.strokeDashoffset = (C * (1 - res.score / 100)).toFixed(2);
+      });
+    });
+    countUp(els.gaugeNum, res.score);
+
+    els.verdictTitle.textContent = g.title;
+    els.verdictTitle.style.color = g.color === '#3ecf8e' ? '#eef0f3' : g.color;
+    els.verdictText.textContent = g.desc;
+
+    /* 分项 */
+    var dims = [
+      ['完好度', res.dims.intact, '碰伤 / 褐变 / 腐烂', '#ff6b5b'],
+      ['色泽',   res.dims.color,  '颜色浓度与均匀度',   '#ff8a5c'],
+      ['光泽',   res.dims.gloss,  '表皮新鲜度',         '#ffc857'],
+      ['果形',   res.dims.shape,  '周正饱满程度',       '#5fc9e8']
+    ];
+    els.dims.innerHTML = dims.map(function(dm){
+      return '<div class="dim">' +
+        '<span class="name" title="' + dm[2] + '">' + dm[0] + '</span>' +
+        '<span class="bar"><i data-w="' + dm[1] + '" style="background:linear-gradient(90deg,' + hexA(dm[3], .45) + ',' + dm[3] + ')"></i></span>' +
+        '<span class="val">' + dm[1] + '</span>' +
+      '</div>';
+    }).join('');
+    requestAnimationFrame(function(){
+      Array.prototype.forEach.call(els.dims.querySelectorAll('.bar i'), function(el, idx){
+        setTimeout(function(){ el.style.width = el.dataset.w + '%'; }, 60 + idx * 70);
+      });
+    });
+
+    /* 理由 */
+    els.reasons.innerHTML = buildReasons(res).map(function(r){
+      var icon = r.type === 'good' ? '✓' : (r.type === 'warn' ? '!' : '✕');
+      return '<li class="' + r.type + '"><span class="dot">' + icon + '</span><span>' + escapeHtml(r.text) + '</span></li>';
+    }).join('');
+
+    var cov = Math.round(res.stats.coverage * 100);
+    els.fineprint.textContent =
+      '果实占画面 ' + cov + '% · 检出瑕疵 ' + res.spotCount + ' 处，占果面 ' +
+      (res.defectRatio * 100).toFixed(1) + '%。分析基于颜色、光泽、局部明暗与褐色区域的图像特征，' +
+      '不是训练过的病害识别模型；光线、反光、背景都会影响结果，仅供挑选参考。';
+  }
+
+  function buildReasons(res){
+    var out = [];
+    var st = res.stats;
+
+    if (res.spotCount === 0){
+      out.push({ type: 'good', text: '未见明显碰伤、褐变或腐烂斑点。' });
+    } else {
+      out.push({ type: 'bad', text: '检测到 ' + res.spotCount + ' 处疑似碰伤 / 褐变，约占果面 ' + (res.defectRatio * 100).toFixed(1) + '%。' });
+      if (res.defectRatio > 0.06){
+        out.push({ type: 'bad', text: '瑕疵面积偏大，这类苹果往往已经开始软化，不耐存放。' });
+      }
+    }
+
+    if (res.dims.color >= 75){
+      out.push({ type: 'good', text: '果色饱满、深浅一致，成熟度看起来比较统一。' });
+    } else if (res.dims.color >= 58){
+      out.push({ type: 'warn', text: '颜色略有不均，局部偏浅，成熟度可能不完全一致。' });
+    } else {
+      out.push({ type: 'bad', text: '颜色发灰发淡，可能不够新鲜或存放时间偏长。' });
+    }
+
+    if (st.highlightFrac < 0.0015){
+      out.push({ type: 'bad', text: '表皮几乎没有自然高光，可能失水发糠、蜡质层已退化。' });
+    } else if (st.highlightFrac > 0.15){
+      out.push({ type: 'warn', text: '反光很强，可能打过蜡，也可能是拍摄过曝。' });
+    } else {
+      out.push({ type: 'good', text: '表皮有柔和的自然光泽，新鲜度不错。' });
+    }
+
+    if (st.roundness > 0.82){
+      out.push({ type: 'good', text: '果形周正饱满，没有明显畸形。' });
+    } else {
+      out.push({ type: 'warn', text: '果形略偏扁或不对称，观感上稍逊一点。' });
+    }
+
+    if (st.meanVal < 0.30){
+      out.push({ type: 'warn', text: '照片整体偏暗，判断可能偏保守，建议在明亮环境下重拍。' });
+    }
+    if (res.stats.coverage < 0.15){
+      out.push({ type: 'warn', text: '果实占画面比例较小，把苹果拍大一点结果会更准。' });
+    }
+
+    return out;
+  }
+
+  function drawPreview(res){
+    var c = els.preview;
+    var ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, res.W, res.H);
+    ctx.drawImage(res.canvas, 0, 0);
+
+    if (!els.marks.checked) return;
+
+    /* 果实外框 */
+    var bb = res.stats.bbox;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(62,207,142,.55)';
+    ctx.lineWidth = Math.max(1, res.W / 420 * 1.4);
+    ctx.setLineDash([6, 5]);
+    ctx.strokeRect(bb[0], bb[1], bb[2], bb[3]);
+    ctx.restore();
+
+    /* 瑕疵标记 */
+    var k = res.W / 420;
+    res.defects.forEach(function(dp, idx){
+      var rr = Math.max(7, dp.r);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(dp.x, dp.y, rr, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,200,87,.16)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,208,102,.95)';
+      ctx.lineWidth = Math.max(1.4, 1.8 * k);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(dp.x, dp.y, rr + 4 * k, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,208,102,.25)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  els.marks.addEventListener('change', function(){
+    if (lastResult && lastResult.ok) drawPreview(lastResult);
+  });
+
+  function countUp(el, target){
+    var t0 = performance.now(), dur = 800;
+    function tick(t){
+      var k = Math.min(1, (t - t0) / dur);
+      var e = 1 - Math.pow(1 - k, 3);
+      el.textContent = Math.round(target * e);
+      if (k < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function hexA(hex, a){
+    var h = hex.replace('#', '');
+    var r = parseInt(h.substring(0, 2), 16);
+    var g = parseInt(h.substring(2, 4), 16);
+    var b = parseInt(h.substring(4, 6), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, function(m){
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+    });
+  }
+
+  /* ================= 交互 ================= */
+  els.pickBtn.addEventListener('click', function(e){ e.stopPropagation(); els.fileInput.click(); });
+  els.camBtn.addEventListener('click', function(e){ e.stopPropagation(); els.camInput.click(); });
+  els.drop.addEventListener('click', function(){ els.fileInput.click(); });
+
+  els.fileInput.addEventListener('change', function(){
+    if (this.files && this.files[0]) handleFile(this.files[0]);
+    this.value = '';
+  });
+  els.camInput.addEventListener('change', function(){
+    if (this.files && this.files[0]) handleFile(this.files[0]);
+    this.value = '';
+  });
+
+  ['dragenter', 'dragover'].forEach(function(ev){
+    els.drop.addEventListener(ev, function(e){
+      e.preventDefault(); e.stopPropagation();
+      els.drop.classList.add('over');
+    });
+  });
+  ['dragleave', 'drop'].forEach(function(ev){
+    els.drop.addEventListener(ev, function(e){
+      e.preventDefault(); e.stopPropagation();
+      if (ev === 'dragleave') els.drop.classList.remove('over');
+    });
+  });
+  els.drop.addEventListener('drop', function(e){
+    els.drop.classList.remove('over');
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) handleFile(f);
+  });
+  window.addEventListener('dragover', function(e){ e.preventDefault(); });
+  window.addEventListener('drop', function(e){ e.preventDefault(); });
+
+  /* 粘贴图片 */
+  window.addEventListener('paste', function(e){
+    var items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (var i = 0; i < items.length; i++){
+      if (items[i].type && items[i].type.indexOf('image') === 0){
+        var f = items[i].getAsFile();
+        if (f){ handleFile(f); toast('已从剪贴板读取图片'); }
+        return;
+      }
+    }
+  });
+
+  /* 示例图 */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-demo]'), function(btn){
+    btn.addEventListener('click', function(){
+      var kind = btn.dataset.demo;
+      var cnv = drawDemo(kind);
+      lastSource = cnv;
+      analyze(cnv);
+    });
+  });
+
+  function drawDemo(kind){
+    var S = 460;
+    var c = document.createElement('canvas');
+    c.width = S; c.height = S;
+    var x = c.getContext('2d');
+
+    /* 背景 */
+    var bg = x.createLinearGradient(0, 0, S, S);
+    bg.addColorStop(0, '#e7e3da');
+    bg.addColorStop(1, '#c9c3b7');
+    x.fillStyle = bg; x.fillRect(0, 0, S, S);
+    /* 桌面纹理 */
+    x.save(); x.globalAlpha = 0.05; x.strokeStyle = '#000'; x.lineWidth = 1;
+    for (var i = 0; i < 26; i++){
+      x.beginPath(); x.moveTo(0, 18 * i + 6);
+      x.bezierCurveTo(S * .3, 18 * i + 14, S * .7, 18 * i - 2, S, 18 * i + 8);
+      x.stroke();
+    }
+    x.restore();
+
+    var cxp = S / 2, cyp = S * 0.53, R = S * 0.30;
+
+    /* 投影 */
+    x.save();
+    x.globalAlpha = 0.30;
+    if ('filter' in x) x.filter = 'blur(16px)';
+    x.fillStyle = '#000';
+    x.beginPath(); x.ellipse(cxp + 6, cyp + R * 1.02, R * 0.86, R * 0.14, 0, 0, Math.PI * 2); x.fill();
+    x.restore();
+
+    /* 果体 */
+    var body = x.createRadialGradient(cxp - R * 0.38, cyp - R * 0.46, R * 0.10, cxp, cyp, R * 1.28);
+    if (kind === 'good'){
+      body.addColorStop(0, '#ff6f5e');
+      body.addColorStop(0.42, '#e2322a');
+      body.addColorStop(0.82, '#ab1912');
+      body.addColorStop(1, '#7d0d08');
+    } else {
+      body.addColorStop(0, '#e8735c');
+      body.addColorStop(0.42, '#c53527');
+      body.addColorStop(0.82, '#8f2a17');
+      body.addColorStop(1, '#5f1a0d');
+    }
+    x.beginPath();
+    x.moveTo(cxp, cyp - R * 0.95);
+    x.bezierCurveTo(cxp + R * 0.72, cyp - R * 1.12, cxp + R * 1.16, cyp - R * 0.34, cxp + R * 1.04, cyp + R * 0.26);
+    x.bezierCurveTo(cxp + R * 0.92, cyp + R * 0.94, cxp + R * 0.44, cyp + R * 1.14, cxp, cyp + R * 1.04);
+    x.bezierCurveTo(cxp - R * 0.44, cyp + R * 1.14, cxp - R * 0.92, cyp + R * 0.94, cxp - R * 1.04, cyp + R * 0.26);
+    x.bezierCurveTo(cxp - R * 1.16, cyp - R * 0.34, cxp - R * 0.72, cyp - R * 1.12, cxp, cyp - R * 0.95);
+    x.closePath();
+    x.fillStyle = body;
+    x.fill();
+
+    x.save();
+    x.clip();
+
+    /* 表皮条纹 */
+    for (var t = 0; t < 150; t++){
+      var ang = Math.random() * Math.PI * 2;
+      var rad = Math.random() * R * 1.05;
+      var px = cxp + Math.cos(ang) * rad;
+      var py = cyp + Math.sin(ang) * rad * 0.98;
+      x.strokeStyle = Math.random() > 0.5 ? 'rgba(255,190,150,.10)' : 'rgba(80,10,5,.12)';
+      x.lineWidth = 1 + Math.random() * 1.6;
+      x.beginPath();
+      x.moveTo(px, py);
+      x.lineTo(px + (Math.random() - 0.5) * 8, py - 6 - Math.random() * 12);
+      x.stroke();
+    }
+
+    /* 高光 */
+    var hl = x.createRadialGradient(
+      cxp - R * 0.44, cyp - R * 0.48, 0,
+      cxp - R * 0.44, cyp - R * 0.48, R * 0.52
+    );
+    hl.addColorStop(0, 'rgba(255,255,255,.92)');
+    hl.addColorStop(0.28, 'rgba(255,235,230,.35)');
+    hl.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = hl;
+    x.beginPath();
+    x.ellipse(cxp - R * 0.44, cyp - R * 0.48, R * 0.24, R * 0.17, -0.5, 0, Math.PI * 2);
+    x.fill();
+
+    /* 暗部 */
+    var sh = x.createRadialGradient(cxp + R * 0.7, cyp + R * 0.55, R * 0.1, cxp + R * 0.7, cyp + R * 0.55, R * 1.1);
+    sh.addColorStop(0, 'rgba(40,0,0,.42)');
+    sh.addColorStop(1, 'rgba(40,0,0,0)');
+    x.fillStyle = sh;
+    x.fillRect(cxp - R * 1.3, cyp - R * 1.3, R * 2.6, R * 2.6);
+
+    if (kind !== 'good'){
+      /* 碰伤 / 褐变：外层软烂发暗 + 内层褐色坏死 */
+      var blobs = [
+        [0.34, 0.52, 0.26, 0.95],
+        [0.60, 0.74, 0.19, 0.88],
+        [0.72, 0.36, 0.13, 0.80]
+      ];
+      blobs.forEach(function(bb2){
+        var bx = cxp + R * bb2[0], by = cyp + R * bb2[1], br = R * bb2[2], al = bb2[3];
+
+        var halo = x.createRadialGradient(bx, by, 0, bx, by, br);
+        halo.addColorStop(0, 'rgba(58,32,20,' + (al * 0.55) + ')');
+        halo.addColorStop(0.62, 'rgba(66,38,24,' + (al * 0.30) + ')');
+        halo.addColorStop(1, 'rgba(66,38,24,0)');
+        x.fillStyle = halo;
+        x.beginPath(); x.arc(bx, by, br, 0, Math.PI * 2); x.fill();
+
+        var core = x.createRadialGradient(bx, by, 0, bx, by, br * 0.72);
+        core.addColorStop(0, 'rgba(88,60,40,' + (al * 0.94) + ')');
+        core.addColorStop(0.52, 'rgba(94,66,46,' + (al * 0.90) + ')');
+        core.addColorStop(0.78, 'rgba(104,78,54,' + (al * 0.55) + ')');
+        core.addColorStop(1, 'rgba(108,80,56,0)');
+        x.fillStyle = core;
+        x.beginPath(); x.arc(bx, by, br * 0.72, 0, Math.PI * 2); x.fill();
+      });
+      /* 腐烂小黑斑 */
+      [[0.46, 0.66, 0.035], [0.52, 0.72, 0.022]].forEach(function(sp){
+        var sx2 = cxp + R * sp[0], sy2 = cyp + R * sp[1], sr = R * sp[2];
+        var g3 = x.createRadialGradient(sx2, sy2, 0, sx2, sy2, sr * 2);
+        g3.addColorStop(0, 'rgba(38,22,12,.95)');
+        g3.addColorStop(1, 'rgba(38,22,12,0)');
+        x.fillStyle = g3;
+        x.beginPath(); x.arc(sx2, sy2, sr * 2, 0, Math.PI * 2); x.fill();
+      });
+    }
+
+    x.restore();
+
+    /* 果柄 */
+    x.strokeStyle = '#4b3019';
+    x.lineWidth = S * 0.017;
+    x.lineCap = 'round';
+    x.beginPath();
+    x.moveTo(cxp + R * 0.01, cyp - R * 0.93);
+    x.quadraticCurveTo(cxp + R * 0.11, cyp - R * 1.14, cxp + R * 0.05, cyp - R * 1.27);
+    x.stroke();
+
+    /* 叶子 */
+    x.save();
+    x.translate(cxp + R * 0.10, cyp - R * 1.18);
+    x.rotate(-0.42);
+    var lg = x.createLinearGradient(0, -R * 0.14, 0, R * 0.14);
+    lg.addColorStop(0, '#4a9a41');
+    lg.addColorStop(1, '#2f6b2b');
+    x.fillStyle = lg;
+    x.beginPath();
+    x.ellipse(R * 0.24, 0, R * 0.25, R * 0.13, 0, 0, Math.PI * 2);
+    x.fill();
+    x.restore();
+
+    return c;
+  }
+
+  /* 初始状态 */
+  els.stage.classList.remove('on');
+  els.empty.style.display = 'flex';
+})();
+</script>
+</body>
+</html>
